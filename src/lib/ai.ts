@@ -25,3 +25,15 @@ export async function aiEnrich(items: EnrichIn[]): Promise<{ items?: EnrichOut[]
   }
   return data
 }
+
+/** PDF or image (photo/screenshot of a price list) -> product rows via Claude */
+export async function aiExtractFile(file: File): Promise<{ rows?: Record<string, string>[]; error?: string }> {
+  if (file.size > 8 * 1024 * 1024) return { error: 'too_large' }
+  const buf = new Uint8Array(await file.arrayBuffer())
+  let bin = ''
+  for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000))
+  const mime = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : '')
+  const { data, error } = await supabase.functions.invoke('lt-ai', { body: { action: 'extract', data: btoa(bin), mime } })
+  if (error || !data?.rows) return { error: data?.error || error?.message || 'failed' }
+  return { rows: data.rows }
+}

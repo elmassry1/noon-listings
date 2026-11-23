@@ -3,7 +3,7 @@ import { supabase, SUPABASE_URL } from '../lib/supabase'
 import { STR, detectLang, type Lang } from '../lib/i18n'
 import { FIELDS, emptyRow, readWorkbook, findHeaderRow, autoMap, applyMapping, cellStr, type Field, type Row, type Mapping, type Sheet } from '../lib/mapping'
 import { eanValid } from '../lib/pricing'
-import { aiMapColumns } from '../lib/ai'
+import { aiMapColumns, aiExtractFile } from '../lib/ai'
 
 const IMG_FIELDS: Field[] = ['img_front', 'img_back', 'img_ingredients', 'img_nutrition']
 const REQUIRED: Field[] = ['title', 'weight_g', 'barcode', 'cost']
@@ -37,6 +37,8 @@ export default function Vendor() {
   const [busy, setBusy] = useState(false)
   const [doneRef, setDoneRef] = useState('')
   const [tried, setTried] = useState(false)
+  const [reading, setReading] = useState(false)
+  const [info, setInfo] = useState('')
   const [uploading, setUploading] = useState<Record<string, boolean>>({})
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -47,7 +49,23 @@ export default function Vendor() {
   const headers = useMemo(() => (sheet ? (sheet.rows[headerRow] || []).map((h, i) => cellStr(h) || `Column ${i + 1}`) : []), [sheet, headerRow])
 
   async function onFile(f: File) {
-    setErr('')
+    setErr(''); setInfo('')
+    const isDoc = /\.pdf$/i.test(f.name) || f.type === 'application/pdf' || f.type.startsWith('image/')
+    if (isDoc) {
+      setReading(true)
+      const res = await aiExtractFile(f)
+      setReading(false)
+      if (res.error || !res.rows?.length) return setErr(res.error === 'too_large' ? t.tooLarge : t.pdfFail)
+      setFileName(f.name); setSheets(null)
+      setRows(res.rows.map((r) => {
+        const row = emptyRow()
+        for (const k of ['title', 'weight_g', 'barcode', 'cost', 'moq', 'notes'] as const) row[k] = (r[k] ?? '').trim()
+        row.barcode = row.barcode.replace(/\D/g, '')
+        return row
+      }))
+      setInfo(t.extracted)
+      return
+    }
     try {
       const ss = await readWorkbook(f)
       if (!ss.length) throw new Error('empty')
@@ -169,13 +187,13 @@ export default function Vendor() {
           <h2 className="grow">{t.products} <span className="muted small">({filled.length} {t.rows})</span></h2>
         </div>
         {!sheets && (
-          <div className="drop" onClick={() => fileRef.current?.click()}
+          <div className="drop" style={{ opacity: reading ? 0.6 : 1, pointerEvents: reading ? 'none' : undefined }} onClick={() => fileRef.current?.click()}
             onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('over') }}
             onDragLeave={(e) => e.currentTarget.classList.remove('over')}
             onDrop={(e) => { e.preventDefault(); e.currentTarget.classList.remove('over'); const f = e.dataTransfer.files[0]; if (f) onFile(f) }}>
-            <b>⬆ {t.upload}</b><div className="muted small">{t.uploadHint}</div>
+            <b>⬆ {t.upload}</b><div className="muted small">{reading ? <b>{t.reading}</b> : t.uploadHint}</div>
             {fileName && <div className="small" style={{ marginTop: 6 }}>📄 {fileName}</div>}
-            <input ref={fileRef} type="file" hidden accept=".xlsx,.xls,.csv,.xlsm,.ods" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = '' }} />
+            <input ref={fileRef} type="file" hidden accept=".xlsx,.xls,.csv,.xlsm,.ods,.pdf,image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = '' }} />
           </div>
         )}
 
@@ -254,6 +272,7 @@ export default function Vendor() {
           </table>
         </div>
         <button className="btn sm" style={{ marginTop: 10 }} onClick={() => setRows((r) => [...r, emptyRow()])}>+ {t.manual}</button>
+        {info && <div className="alert ok">{info}</div>}
         {filled.length > 0 && missingImgs && <div className="alert">{t.warnImages}</div>}
         {filled.some(badBc) && <div className="alert">{t.badBarcode}: {filled.filter(badBc).map((r) => r.barcode).join(', ')}</div>}
       </div>

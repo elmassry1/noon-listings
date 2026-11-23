@@ -15,7 +15,7 @@ const en = {
   arName: 'Brand name in Arabic',
   products: 'Products',
   upload: 'Upload your sheet',
-  uploadHint: 'Excel or CSV. Any layout — we find the columns.',
+  uploadHint: 'Excel, CSV, PDF or a photo of your price list. Any layout — we find the columns.',
   manual: 'Add row',
   sheet: 'Sheet',
   mapTitle: 'Check the columns we detected',
@@ -52,6 +52,10 @@ const en = {
   aiMapping: 'Reading your columns…',
   detected: 'Detected',
   lang: 'العربية',
+  reading: 'Reading your file… this can take up to a minute.',
+  extracted: 'We read these products from your file. Please check every row before submitting.',
+  pdfFail: "We couldn't read this file. Please upload Excel or fill the table.",
+  tooLarge: 'File is too large (max 8 MB).',
 }
 const ar: typeof en = {
   title: 'إدراج منتجات جديدة',
@@ -67,7 +71,7 @@ const ar: typeof en = {
   arName: 'اسم العلامة بالعربية',
   products: 'المنتجات',
   upload: 'ارفع ملفك',
-  uploadHint: 'Excel أو CSV. بأي تنسيق — سنجد الأعمدة.',
+  uploadHint: 'Excel أو CSV أو PDF أو صورة لقائمة الأسعار. بأي تنسيق — سنجد الأعمدة.',
   manual: 'إضافة صف',
   sheet: 'الورقة',
   mapTitle: 'تحقق من الأعمدة التي تعرفنا عليها',
@@ -104,6 +108,10 @@ const ar: typeof en = {
   aiMapping: 'جارٍ قراءة الأعمدة…',
   detected: 'تم التعرف',
   lang: 'English',
+  reading: 'جارٍ قراءة ملفك… قد يستغرق ذلك دقيقة.',
+  extracted: 'قرأنا هذه المنتجات من ملفك. يرجى مراجعة كل صف قبل الإرسال.',
+  pdfFail: 'تعذر قراءة هذا الملف. يرجى رفع ملف Excel أو تعبئة الجدول.',
+  tooLarge: 'الملف كبير جداً (الحد الأقصى 8 ميجابايت).',
 }
 export const STR = { en, ar }
 export type Str = typeof en
