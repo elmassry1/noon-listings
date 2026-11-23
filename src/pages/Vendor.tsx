@@ -61,6 +61,8 @@ export default function Vendor() {
         const row = emptyRow()
         for (const k of ['title', 'weight_g', 'barcode', 'cost', 'moq', 'notes'] as const) row[k] = (r[k] ?? '').trim()
         row.barcode = row.barcode.replace(/\D/g, '')
+        // never carry RSP / retail prices into notes
+        row.notes = row.notes.split(/[;|]/).map((x) => x.trim()).filter((x) => x && !/\b(rsp|srp|msrp|retail|selling|shelf|consumer)\b/i.test(x)).join('; ')
         return row
       }))
       setInfo(t.extracted)
